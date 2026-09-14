@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunday // Sovereign HUD & Analysis</title>
+    <style>
+        :root {
+            --bg-color: #05070b;
+            --panel-bg: #0b0f19;
+            --border-color: #1e293b;
+            --accent-color: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.2);
+            --text-main: #e2e8f0;
+            --text-muted: #64748b;
+            --user-bubble: #0284c7;
+            --system-bubble: #0f172a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 15px 20px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .status-indicator {
+            font-size: 0.8rem;
+            color: #4ade80;
+            background: rgba(74, 222, 128, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(74, 222, 128, 0.2);
+        }
+
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Chat Section */
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            max-width: 80%;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .user {
+            background-color: var(--user-bubble);
+            color: white;
+            align-self: flex-end;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+        }
+
+        .system {
+            background-color: var(--system-bubble);
+            color: var(--text-main);
+            align-self: flex-start;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Side Analysis Panel */
+        .analysis-panel {
+            width: 300px;
+            background-color: var(--panel-bg);
+            border-left: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-sizing: border-box;
+        }
+
+        .analysis-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .metric-card {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .metric-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-main);
+            margin-top: 5px;
+        }
+
+        /* Input Controls */
+        #input-container {
+            padding: 20px;
+            background-color: var(--panel-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        button {
+            padding: 12px 20px;
+            border-radius: 6px;
+            border: none;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        #mic-btn {
+            background-color: #1e293b;
+            color: var(--accent-color);
+            border: 1px solid var(--border-color);
+        }
+
+        #mic-btn.listening {
+            background-color: #ef4444;
+            color: white;
+            border-color: #ef4444;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .analysis-panel { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>SUNDAY // SOVEREIGN HUD</h1>
+        <div class="status-indicator">● SYSTEM NOMINAL</div>
+    </header>
+
+    <div class="main-layout">
+        <div class="chat-section">
+            <div id="chat-container">
+                <div class="message system">Core online. Sovereign architecture initialized locally. Ready for commands, Ishanth.</div>
+            </div>
+
+            <div id="input-container">
+                <input type="text" id="user-input" placeholder="Enter command or query..." autofocus>
+                <button id="mic-btn" onclick="toggleSpeechRecognition()" title="Voice Input">🎤</button>
+                <button onclick="handleCommand()">Execute</button>
+            </div>
+        </div>
+
+        <div class="analysis-panel">
+            <h3>Live Telemetry</h3>
+            <div class="metric-card">
+                <div class="metric-title">Architecture</div>
+                <div class="metric-value">Standalone / Local</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Interface Mode</div>
+                <div class="metric-value">Custom HUD</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Analysis Engine</div>
+                <div class="metric-value" id="status-metric">Active</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const statusMetric = document.getElementById('status-metric');
+        const micBtn = document.getElementById('mic-btn');
+
+        let recognition = null;
+        let isListening = false;
+
+        // Initialize Speech Recognition if supported by browser
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = function(event) {
+                const speechText = event.results[0][0].transcript;
+                userInput.value = speechText;
+                stopListening();
+                handleCommand();
+            };
+
+            recognition.onerror = function() {
+                stopListening();
+            };
+
+            recognition.onend = function() {
+                stopListening();
+            };
+        }
+
+        function toggleSpeechRecognition() {
+            if (!recognition) {
+                alert("Speech recognition is not supported on this browser.");
+                return;
+            }
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+                isListening = true;
+                micBtn.classList.add('listening');
+                micBtn.textContent = '🛑';
+            }
+        }
+
+        function stopListening() {
+            isListening = false;
+            micBtn.classList.remove('listening');
+            micBtn.textContent = '🎤';
+        }
+
+        userInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') handleCommand();
+        });
+
+        function handleCommand() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            appendMessage(text, 'user');
+            userInput.value = '';
+            statusMetric.textContent = 'Processing...';
+
+            setTimeout(() => {
+                let response = `Command processed locally: "${text}"`;
+                const lower = text.toLowerCase();
+                
+                if (lower.includes('status') || lower.includes('system')) {
+                    response = "All infrastructure elements nominal. Security protocols holding.";
+                } else if (lower.includes('scan')) {
+                    response = "Executing environment diagnostic sweep... Zero telemetry leaks found. System fully autonomous.";
+                } else if (lower.includes('analysis') || lower.includes('predict')) {
+                    response = "Predictive telemetry stable: Local pipeline is running at peak isolation efficiency with zero third-party dependencies.";
+                }
+
+                appendMessage(response, 'system');
+                statusMetric.textContent = 'Active';
+            }, 350);
+        }
+
+        function appendMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            div.textContent = text;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+</body>
+  </html>
